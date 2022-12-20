@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <label>Select Video Source (Camera)</label>
+
+    <select id="video-source"></select>
+    <br />
+    <label>Select Audio Source (Microphone)</label>
+
+    <select id="audio-source"></select>
+    <div class="video-container">
+      <video autoplay muted class="local-video" id="local-video"></video>
+    </div>
+    <input type="text" id="input1" /> <button onclick="makecall()">send</button>
+    <div>ID: <span id="ID"></span></div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      let videoSourcesSelect = document.getElementById("video-source");
+      let audioSourcesSelect = document.getElementById("audio-source");
+      const { RTCPeerConnection, RTCSessionDescription } = window;
+      const peerConnection = new RTCPeerConnection();
+      const peerConnection2 = new RTCPeerConnection();
+      const peerConnection3 = new RTCPeerConnection();
+      const peerConnection4 = new RTCPeerConnection();
+      var peers = [
+        { user: null, RTC: peerConnection },
+        { user: null, RTC: peerConnection2 },
+        { user: null, RTC: peerConnection3 },
+        { user: null, RTC: peerConnection4 },
+      ];
+      var socket = io();
+      socket.on("connect", async () => {
+        document.getElementById("ID").innerHTML = socket.id;
+      });
+      socket.on("answer-made", async (data) => {
+        for await (const [index, element] of peers.entries()) {
+          if (element.user == data.id) {
+            return await element.RTC.setRemoteDescription(new RTCSessionDescription(data.answer));
+          }
+        }
+      });
+      socket.emit("SetRoom", { room: "test" });
+      async function makecall() {
+        setInterval(async () => {
+          for await (const [index, element] of peers.entries()) {
+            if (element.user == document.getElementById("input1").value) {
+              const offer = await element.RTC.createOffer();
+              await element.RTC.setLocalDescription(new RTCSessionDescription(offer));
+              return socket.emit("call-user", { offer, to: document.getElementById("input1").value });
+            } else if (element.user == null) {
+              peers[index]["user"] = document.getElementById("input1").value;
+              const offer = await element.RTC.createOffer();
+              await element.RTC.setLocalDescription(new RTCSessionDescription(offer));
+              return socket.emit("call-user", { offer, to: document.getElementById("input1").value });
+            }
+          }
+        }, 1000);
+      }
+
+      let MediaStreamHelper = {
+        _stream: null,
+        getDevices: async function () {
+          return await navigator.mediaDevices.enumerateDevices();
+        },
+        requestStream: async function () {
+          if (this._stream) {
+            this._stream.getTracks().forEach((track) => {
+              track.stop();
+            });
+          }
+          const audioSource = audioSourcesSelect.value;
+          const videoSource = videoSourcesSelect.value;
+          const constraints = {
+            audio: {
+              deviceId: audioSource ? { exact: audioSource } : undefined,
+            },
+            video: {
+              deviceId: videoSource ? { exact: videoSource } : undefined,
+            },
+          };
+
+          return await navigator.mediaDevices.getUserMedia(constraints);
+        },
+      };
+
+      MediaStreamHelper.requestStream()
+        .then(function (stream) {
+          MediaStreamHelper._stream = stream;
+          audioSourcesSelect.selectedIndex = [...audioSourcesSelect.options].findIndex((option) => option.text === stream.getAudioTracks()[0].label);
+          videoSourcesSelect.selectedIndex = [...videoSourcesSelect.options].findIndex((option) => option.text === stream.getVideoTracks()[0].label);
+          document.getElementById("local-video").srcObject = stream;
+          stream.getTracks().forEach((track) => peerConnection.addTrack(track, stream));
+          stream.getTracks().forEach((track) => peerConnection2.addTrack(track, stream));
+          stream.getTracks().forEach((track) => peerConnection3.addTrack(track, stream));
+          stream.getTracks().forEach((track) => peerConnection4.addTrack(track, stream));
+          MediaStreamHelper.getDevices()
+            .then((devices) => {
+              devices.forEach((device) => {
+                let option = new Option();
+                option.value = device.deviceId;
+                switch (device.kind) {
+                  case "videoinput":
+                    option.text = device.label || `Camera ${videoSourcesSelect.length + 1}`;
+                    videoSourcesSelect.appendChild(option);
+                    break;
+                  case "audioinput":
+                    option.text = device.label || `Microphone ${videoSourcesSelect.length + 1}`;
+                    audioSourcesSelect.appendChild(option);
+                    break;
+                }
+              });
+            })
+            .catch(function (e) {
+              console.log(e.name + ": " + e.message);
+            });
+        })
+        .catch(function (err) {
+          console.error(err);
+        });
+    </script>
+  </body>
+</html>
