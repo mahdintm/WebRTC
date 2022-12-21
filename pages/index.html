@@ -14,8 +14,22 @@
       </div>
     </div>
     <div class="down">
-      <div>ورود به اتاق</div>
-      <div style="border: 3px solid #2c6eff; background-color: #ffffff; color: #2c6eff">ساخت اتاق</div>
+      <div onclick="enterroom()">ورود به اتاق</div>
+      <div onclick="Createroom()" style="border: 3px solid #2c6eff; background-color: #ffffff; color: #2c6eff">ساخت اتاق</div>
     </div>
+
+    <script>
+      function enterroom() {
+        let person = prompt("لطفا شماره اتاق را وارد کنید");
+        window.location.href = `/reciver?roomID=${person}`;
+      }
+      function Createroom() {
+        fetch(`/getroomcode`).then(async (res) => {
+          let a = await res.json();
+          console.log(a);
+          window.location.href = `sender?roomID=${a}`;
+        });
+      }
+    </script>
   </body>
 </html>

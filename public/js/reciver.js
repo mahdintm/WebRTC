@@ -10,6 +10,7 @@ socket.on("redirect", (url) => {
 document.getElementById("roomid").innerHTML = new URLSearchParams(window.location.search).get("roomID");
 socket.emit("SetRoom", { room: new URLSearchParams(window.location.search).get("roomID") });
 socket.on("call-made", async (data) => {
+  console.log("call-made");
   await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
   const answer = await peerConnection.createAnswer();
   await peerConnection.setLocalDescription(new RTCSessionDescription(answer));
