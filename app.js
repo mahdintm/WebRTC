@@ -95,6 +95,6 @@ io.engine.generateId = (req) => {
 // io.of("/").adapter.on("join-room", (room, id) => {
 //   console.log(`socket ${id} has joined room ${room}`);
 // });
-server.listen(3000, () => {
-  console.log("listening on *:3000");
+server.listen(3200, () => {
+  console.log("listening on *:3200");
 });
