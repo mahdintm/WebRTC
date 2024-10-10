@@ -3,11 +3,11 @@
     "start": "nodemon app.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
+    "express": "^4.21.1",
     "http": "^0.0.1-security",
     "node-code-generator": "^1.0.3",
     "nodemon": "^2.0.20",
-    "socket.io": "^4.5.3",
+    "socket.io": "^4.8.0",
     "uuid": "^9.0.0"
   }
 }
